@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
-const { DateTime } = require('luxon');
+const { DateTime, Settings } = require('luxon');
 const fetch = require('node-fetch');
 const { checkStatus } = require('../helpers/httpError');
 
 const Message = mongoose.model('message');
+
+Settings.throwOnInvalid = true;
 
 const sendSMS = async (body, messageId) => {
     try {
@@ -55,13 +57,17 @@ const getSMSStatus = async (externalMessageId) => {
         const validResponse = checkStatus(res);
         const finalResponse = await validResponse.json();
         const { status, delivery_time } = finalResponse;
+
+        // Note that external API datetime must be on UTC to maintain consistency
+
         const unixDateSent = DateTime.fromFormat(
             delivery_time,
             process.env.FI_SMS_SERVICE_DATE_FORMAT
         );
+
         const newMessage = await Message.findOneAndUpdate(
             { externalMessageId: externalMessageId },
-            { status: status, date_sent: unixDateSent },
+            { status: status, date_sent: unixDateSent.valueOf() },
             { new: true, useFindAndModify: false }
         );
         return newMessage;

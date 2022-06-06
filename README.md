@@ -27,3 +27,7 @@ Docker deployment :
 -   After successfuly build image , run `docker run --name scheduler-service -p 9000:9000 'yourusername'/scheduler-sms-service`
 
 [Read The Docs](https://github.com/Maxxoto/FI-SchedulerService/blob/main/docs/en_docs.md#) <br><br>
+
+#### Notes
+
+-   External API datetime must be on UTC to maintain consistency (in our case `delivery_time` timezone is unknown so for good system design all BE must be on UTC for multiple timezone consistency)

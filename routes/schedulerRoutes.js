@@ -70,6 +70,27 @@ module.exports = (app, agenda) => {
     app.get('/api/scheduler/sms', async (req, res) => {
         try {
             const messages = await Message.find().exec();
+
+            if (messages.length > 0) {
+                for (const message of messages) {
+                    // Only check 2 status of the message , to avoid rate limit or flood external API connection
+                    if (
+                        message.status === 'ACCEPTD' ||
+                        message.status === 'SCHEDLD'
+                    ) {
+                        console.log('check');
+                        const response = await smsService.getSMSStatus(
+                            message.externalMessageId
+                        );
+                        if (response.status === 'error') {
+                            throw new Error(response.message);
+                        } else {
+                            message.status = response.status;
+                            console.log(message.status);
+                        }
+                    }
+                }
+            }
             return res.send({
                 status: 'success',
                 message: 'Successfully fetched messages',
@@ -91,7 +112,14 @@ module.exports = (app, agenda) => {
             }
 
             const messages = await Message.findOne({ _id: id }).exec();
-            await smsService.getSMS(messages.externalMessageId);
+            const response = await smsService.getSMSStatus(
+                messages.externalMessageId
+            );
+            if (response.status === 'error') {
+                throw new Error(response.message);
+            } else {
+                messages.status = response.status;
+            }
             return res.send({
                 status: 'success',
                 message: 'Successfully fetched messages',
