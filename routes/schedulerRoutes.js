@@ -2,15 +2,12 @@ const { DateTime, Settings } = require('luxon');
 const mongoose = require('mongoose');
 const fetch = require('node-fetch');
 
-// Email Template
-const surveyTemplate = require('../services/emailTemplates');
-
 // Mongoose model
 const Scheduler = mongoose.model('scheduler');
 const Message = mongoose.model('message');
 
 // Services
-const SMSService = require('../services/smsService');
+const smsService = require('../services/smsService');
 
 Settings.throwOnInvalid = true;
 
@@ -92,7 +89,9 @@ module.exports = (app, agenda) => {
             if (!id.match(/^[0-9a-fA-F]{24}$/)) {
                 throw new Error('Data not found !');
             }
+
             const messages = await Message.findOne({ _id: id }).exec();
+            await smsService.getSMS(messages.externalMessageId);
             return res.send({
                 status: 'success',
                 message: 'Successfully fetched messages',
