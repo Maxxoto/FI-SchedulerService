@@ -1,16 +1,23 @@
-FROM node:12.16.1
+FROM node:16.14-alpine
 
-WORKDIR /service
+ENV TZ="UTC"
 
-COPY package.json /service/package.json
+WORKDIR /usr/src/app
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+COPY package*.json ./
 
 RUN npm install
 
-# SETUP Timezone
-ENV TZ Asia/Jakarta
+# If you are building your code for production
+# RUN npm ci --only=production
+RUN npm install pm2 -g
 
-COPY . /service
+# Bundle app source
+COPY . .
+COPY .env.example /usr/src/app/.env
 
 EXPOSE 9000
 
-CMD ["node", "index.js"]
+CMD ["pm2-runtime", "index.js"]

@@ -9,11 +9,19 @@
     "ecmaVersion": 11
   },
   "rules": {
+    "indent": ["error", 4],
     "comma-dangle": [
       "error",
       {
         "objects": "only-multiline"
       }
     ]
-  }
+  },
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [".js", ".jsx"]
+      }
+    }
+  },
 }
