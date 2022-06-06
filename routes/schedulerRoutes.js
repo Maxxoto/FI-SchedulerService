@@ -69,32 +69,36 @@ module.exports = (app, agenda) => {
     });
     app.get('/api/scheduler/sms', async (req, res) => {
         try {
-            const messages = await Message.find().exec();
-
+            let messages = await Message.find().exec();
+            let newMessages = [];
             if (messages.length > 0) {
-                for (const message of messages) {
-                    // Only check 2 status of the message , to avoid rate limit or flood external API connection
-                    if (
-                        message.status === 'ACCEPTD' ||
-                        message.status === 'SCHEDLD'
-                    ) {
-                        console.log('check');
-                        const response = await smsService.getSMSStatus(
-                            message.externalMessageId
-                        );
-                        if (response.status === 'error') {
-                            throw new Error(response.message);
+                // Only check 2 status of the message , to avoid rate limit or flood external API connection
+                newMessages = Promise.all(
+                    messages.map(async (message) => {
+                        // Only check 2 status of the message , to avoid rate limit or flood external API connection
+                        if (
+                            message.status === 'ACCEPTD' ||
+                            message.status === 'SCHEDLD'
+                        ) {
+                            const response = await smsService.getSMSStatus(
+                                message.externalMessageId
+                            );
+                            if (response.status === 'error') {
+                                throw new Error(response.message);
+                            } else {
+                                message.status = response.status;
+                                return message;
+                            }
                         } else {
-                            message.status = response.status;
-                            console.log(message.status);
+                            return message;
                         }
-                    }
-                }
+                    })
+                );
             }
             return res.send({
                 status: 'success',
                 message: 'Successfully fetched messages',
-                data: messages,
+                data: await newMessages,
             });
         } catch (error) {
             console.log(error);
